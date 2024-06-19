@@ -5,6 +5,7 @@ const sendEmail = require("../middleware/mailer");
 const { textEncrypt, textDecrypt } = require("../middleware/textEncrypt");
 const { sendSms, otpGenerate } = require("../utils/otpGenerator");
 const pagination = require("../utils/pagination");
+const { checkOtpTimeOut } = require("../utils/helper");
 
 //userlogin service
 const userLoginService = async (req, res) => {
@@ -128,6 +129,15 @@ const verifyOtpService = async (req, res) => {
     try {
         let { mobileNumber, otp } = req.body;
         let verifyOtp = await authSchema.findOne({ mobileNumber: mobileNumber });
+        let isOtpTimeout = await checkOtpTimeOut(verifyOtp.updatedAt)
+        if(!isOtpTimeout){
+            return {
+                error: true,
+                status: HTTP_CODE.BAD_REQUEST,
+                message: CONSTANTS_TEXT.OTP_TIMEOUT,
+                data: {}
+            }
+        }
         if (verifyOtp.mobileNumber == mobileNumber && verifyOtp.otp == otp) {
             await authSchema.findOneAndUpdate(
                 { _id: verifyOtp._id.toString() },
@@ -226,10 +236,17 @@ const resetPasswordService = async (req, res) => {
 
 //get all user service
 const getAllUsersService = async (req, res) => {
+    const searchQuery = req.query.search
+    let findQuery = {
+        $and: [
+            { name: { $regex: searchQuery || "", $options: "i" } },
+            { isDelete: false },
+            { isActive: true }
+        ]
+    }
     try {
         let pageMeta = await pagination(req, authSchema);
-        let users = await authSchema
-            .find({ $or: { isDelete: false } })
+        let users = await authSchema.find(findQuery)
             .limit(pageMeta?.limit)
             .skip(pageMeta?.skip);
         delete pageMeta.skip;

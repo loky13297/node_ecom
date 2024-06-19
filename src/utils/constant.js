@@ -22,7 +22,7 @@ const CONSTANTS_TEXT = {
     PRODUCT_UPDATE: "Product updated successfully",
     PRODUCT_DELETE: "Product deleted successfully",
     PRODUCT_NOT_FOUND: "Product not found",
-
+    OTP_TIMEOUT: "Otp timeout"
 }
 
 module.exports = { HTTP_CODE, CONSTANTS_TEXT }
